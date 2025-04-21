@@ -9,6 +9,7 @@ Go ArchTest is a library for testing the architecture of your Go projects, simil
 - **Parameter Type Checking**: Verify that method parameters use interfaces instead of concrete struct implementations, promoting loose coupling.
 - **Layered Architecture Support**: Define layers and rules between them to enforce a clean layered architecture.
 - **Layer-Specific Rules**: Define architectural rules specific to individual layers.
+- **Direct Layer Dependency Rules**: Specify that one layer should not depend on another layer using a more intuitive API.
 
 ## Installation
 
@@ -156,6 +157,50 @@ rule3, err := applicationLayer.MethodsShouldUseInterfaceParameters(".*Service$",
 valid1, violations1 := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{rule1})
 valid2, violations2 := arch.ValidateInterfaceImplementations([]*arctest.InterfaceImplementationRule{rule2})
 valid3, violations3 := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule3})
+```
+
+### Using Direct Layer Dependency Rules
+
+You can use a more intuitive API to define that one layer should not depend on another layer, without having to use regex patterns. This is particularly useful when working with a layered architecture.
+
+```go
+// Define layers
+domainLayer, _ := arctest.NewLayer("Domain", "^domain$")
+applicationLayer, _ := arctest.NewLayer("Application", "^application$")
+utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
+
+// Set architecture for the layers
+layeredArch := arctest.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
+layeredArch.SetArchitecture(arch)
+
+// Method 1: Define direct layer dependencies
+// Domain should not depend on Application layer
+domainAppRule, err := domainLayer.DoesNotDependOnLayer(applicationLayer)
+if err != nil {
+    t.Fatalf("Failed to create layer dependency rule: %v", err)
+}
+
+// Domain should not depend on Utils layer
+domainUtilsRule, err := domainLayer.DoesNotDependOnLayer(utilsLayer)
+if err != nil {
+    t.Fatalf("Failed to create layer dependency rule: %v", err)
+}
+
+// Test the rules
+valid, violations := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{
+    domainAppRule,
+    domainUtilsRule,
+})
+
+// Method 2: Define allowed dependencies between layers
+// Application layer can depend on Domain layer
+err = applicationLayer.DependsOnLayer(domainLayer, layeredArch)
+if err != nil {
+    t.Fatalf("Failed to create layer dependency: %v", err)
+}
+
+// Check layered architecture for violations
+violations, err := layeredArch.Check(arch)
 ```
 
 ### Testing for Dependency Violations
