@@ -1,6 +1,6 @@
-# Go ArchTest
+# Go ArcTest
 
-Go ArchTest is a library for testing the architecture of your Go projects, similar to Java's ArchUnit. It provides tooling to validate architectural rules and constraints in your codebase through tests.
+Go ArcTest is a library for testing the architecture of your Go projects, similar to Java's ArchUnit. It provides tooling to validate architectural rules and constraints in your codebase through tests.
 
 ## Features
 
