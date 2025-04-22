@@ -42,6 +42,11 @@ func (a *Architecture) CheckDependencies(rules []*DependencyRule) ([]string, err
 
 	for pkgPath, pkg := range a.Packages {
 		for _, importPath := range pkg.Imports {
+			// Skip standard library imports that don't have dots or slashes
+			if !strings.Contains(importPath, ".") && !strings.Contains(importPath, "/") {
+				continue
+			}
+
 			for _, rule := range rules {
 				// Check if this package matches the source pattern
 				if rule.sourcePatternRegex.MatchString(pkgPath) {
@@ -76,7 +81,28 @@ func NewLayer(name string, packages ...string) (*Layer, error) {
 	patterns := make([]*regexp.Regexp, 0, len(packages))
 
 	for _, pkg := range packages {
-		pattern, err := regexp.Compile(pkg)
+		// Modify pattern to ensure it can match subpackages
+		modifiedPattern := pkg
+
+		// If the pattern doesn't already have a mechanism to match subpackages,
+		// and it's not already a complex pattern (contains |, (, ), etc.),
+		// modify it to match the package and all its subpackages
+		if !strings.Contains(pkg, "/") &&
+			!strings.Contains(pkg, "|") &&
+			!strings.Contains(pkg, "(") &&
+			!strings.Contains(pkg, "[") {
+
+			// If it ends with $, replace it with a pattern that also matches subpackages
+			if strings.HasSuffix(pkg, "$") {
+				base := strings.TrimSuffix(pkg, "$")
+				modifiedPattern = fmt.Sprintf("%s(/.*)?$", base)
+			} else if strings.HasPrefix(pkg, "^") {
+				// If it starts with ^ but doesn't end with $, add the subpackage matcher
+				modifiedPattern = fmt.Sprintf("%s(/.*)?", pkg)
+			}
+		}
+
+		pattern, err := regexp.Compile(modifiedPattern)
 		if err != nil {
 			return nil, fmt.Errorf("invalid package pattern %q: %w", pkg, err)
 		}
@@ -85,8 +111,8 @@ func NewLayer(name string, packages ...string) (*Layer, error) {
 
 	return &Layer{
 		Name:     name,
-		Packages: packages,
-		patterns: patterns,
+		Packages: packages, // Keep the original patterns for reference
+		patterns: patterns, // Use the modified patterns for matching
 	}, nil
 }
 
@@ -150,24 +176,37 @@ func (l *Layer) DoesNotDependOnLayer(targetLayer *Layer) (*DependencyRule, error
 		return nil, fmt.Errorf("target layer cannot be nil")
 	}
 
-	// Create patterns that will match any fully qualified import path
-	// ending with the specified package patterns
-	sourcePatterns := make([]string, 0, len(l.Packages))
+	// Build a comprehensive source pattern
+	var sourcePatterns []string
 	for _, pkg := range l.Packages {
 		// Remove ^ and $ markers if present
 		cleanPattern := strings.TrimPrefix(pkg, "^")
 		cleanPattern = strings.TrimSuffix(cleanPattern, "$")
-		// Create pattern that matches any path ending with the package
-		sourcePatterns = append(sourcePatterns, fmt.Sprintf("(^|/)%s$", cleanPattern))
+
+		// Add patterns to match:
+		// 1. The package name exactly (for packages without a path)
+		// 2. The package at the end of a path (to catch example.com/mypackage)
+		// 3. The package with subpackages (to catch mypackage/subpackage)
+		sourcePatterns = append(sourcePatterns,
+			fmt.Sprintf("^%s$", cleanPattern),       // Exact match
+			fmt.Sprintf("(^|.*/)%s$", cleanPattern), // At end of path
+			fmt.Sprintf("^%s/.*$", cleanPattern))    // With subpackages
 	}
 	sourcePattern := strings.Join(sourcePatterns, "|")
 
-	// Same for target patterns
-	targetPatterns := make([]string, 0, len(targetLayer.Packages))
+	// Build a comprehensive target pattern
+	var targetPatterns []string
 	for _, pkg := range targetLayer.Packages {
+		// Remove ^ and $ markers if present
 		cleanPattern := strings.TrimPrefix(pkg, "^")
 		cleanPattern = strings.TrimSuffix(cleanPattern, "$")
-		targetPatterns = append(targetPatterns, fmt.Sprintf("(^|/)%s$", cleanPattern))
+
+		// Similar patterns for target
+		targetPatterns = append(targetPatterns,
+			fmt.Sprintf("^%s$", cleanPattern),       // Exact match
+			fmt.Sprintf("(^|.*/)%s$", cleanPattern), // At end of path
+			fmt.Sprintf("^%s/.*$", cleanPattern),    // With subpackages
+			fmt.Sprintf(".*/%s$", cleanPattern))     // Just the package name at the end of any path
 	}
 	targetPattern := strings.Join(targetPatterns, "|")
 

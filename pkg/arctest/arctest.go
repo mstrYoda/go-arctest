@@ -131,10 +131,62 @@ func (a *Architecture) parseAllPackages() error {
 	})
 }
 
-// ParsePackage parses a specific package
+// ParsePackage parses a specific package and its subpackages
 func (a *Architecture) ParsePackage(pkgPath string) error {
 	fullPath := filepath.Join(a.basePath, pkgPath)
 
+	// First check if this is a directory
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat package path %s: %w", pkgPath, err)
+	}
+
+	if info.IsDir() {
+		// Parse the current directory as a package
+		if err := a.parsePackageDir(fullPath, pkgPath); err != nil {
+			return err
+		}
+
+		// Now recursively parse all subdirectories that might contain Go packages
+		files, err := os.ReadDir(fullPath)
+		if err != nil {
+			return fmt.Errorf("failed to read package directory %s: %w", pkgPath, err)
+		}
+
+		for _, file := range files {
+			if file.IsDir() && !strings.HasPrefix(file.Name(), ".") {
+				subPkgPath := filepath.Join(pkgPath, file.Name())
+				// Check if the subdirectory contains any Go files before parsing
+				hasGoFiles := false
+				subDir := filepath.Join(fullPath, file.Name())
+				subFiles, err := os.ReadDir(subDir)
+				if err != nil {
+					return fmt.Errorf("failed to read subdirectory %s: %w", subPkgPath, err)
+				}
+
+				for _, subFile := range subFiles {
+					if !subFile.IsDir() && strings.HasSuffix(subFile.Name(), ".go") && !strings.HasSuffix(subFile.Name(), "_test.go") {
+						hasGoFiles = true
+						break
+					}
+				}
+
+				if hasGoFiles {
+					if err := a.ParsePackage(subPkgPath); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	}
+
+	// If it's not a directory, assume it's a Go file or pattern
+	return a.parsePackageDir(filepath.Dir(fullPath), filepath.Dir(pkgPath))
+}
+
+// parsePackageDir parses a specific directory as a Go package
+func (a *Architecture) parsePackageDir(fullPath, pkgPath string) error {
 	fset := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fset, fullPath, func(info os.FileInfo) bool {
 		return !strings.HasSuffix(info.Name(), "_test.go")
