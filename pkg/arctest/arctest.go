@@ -210,7 +210,6 @@ func (a *Architecture) parsePackageDir(fullPath, pkgPath string) error {
 			// Process imports
 			for _, imp := range file.Imports {
 				importPath := strings.Trim(imp.Path.Value, "\"")
-				fmt.Printf("Found import in %s: %s\n", pkgPath, importPath)
 				p.Imports = append(p.Imports, importPath)
 
 				// Handle import alias
