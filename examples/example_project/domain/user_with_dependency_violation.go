@@ -41,3 +41,20 @@ func (s *UserServiceWithLogger) CreateUserWithLogging(username, email string) (*
 	s.logger.Log("User created successfully")
 	return user, nil
 }
+
+// UpdateUserWithExternalLogger updates a user using an external logger
+// This method intentionally takes a concrete Logger implementation instead of the Logger interface
+// to demonstrate parameter type violation
+func (s *UserServiceWithLogger) UpdateUserWithExternalLogger(user *User, newEmail string, logger *utils.Logger) error {
+	logger.Log("Attempting to update user email")
+
+	if newEmail == "" {
+		err := errors.New("new email is required")
+		logger.LogError(err)
+		return err
+	}
+
+	user.Email = newEmail
+	logger.Log("User email updated successfully")
+	return nil
+}
