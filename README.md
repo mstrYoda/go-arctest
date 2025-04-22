@@ -10,6 +10,7 @@ Go ArcTest is a library for testing the architecture of your Go projects, simila
 - **Layered Architecture Support**: Define layers and rules between them to enforce a clean layered architecture.
 - **Layer-Specific Rules**: Define architectural rules specific to individual layers.
 - **Direct Layer Dependency Rules**: Specify that one layer should not depend on another layer using a more intuitive API.
+- **Nested Package Support**: Automatically analyzes nested packages within layers and applies architecture rules to them.
 
 ## Installation
 
@@ -34,7 +35,7 @@ if err != nil {
     t.Fatalf("Failed to parse packages: %v", err)
 }
 
-// Parse specific packages
+// Parse specific packages and their subpackages
 // err = arch.ParsePackages("internal/domain", "internal/service")
 ```
 
@@ -92,6 +93,45 @@ if !valid {
 }
 ```
 
+### Testing for Interface Parameter Violations
+
+The following example demonstrates how to create a test that verifies methods are using interfaces as parameters instead of concrete struct implementations. This is useful for enforcing the Dependency Inversion Principle.
+
+```go
+func TestInterfaceParameterViolation(t *testing.T) {
+    // Initialize architecture and parse packages
+    arch, _ := arctest.New("./example_project")
+    arch.ParsePackages("domain", "utils")
+    
+    // Define the rule: methods named "Update*" should use interface parameters for "Logger"
+    // This will check if methods are violating the rule by using concrete structs
+    rule, _ := arch.MethodsShouldUseInterfaceParameters(".*Service.*", "Update.*", ".*Logger")
+    
+    // Validate parameter types - we expect violations
+    valid, violations := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule})
+    
+    // If we're testing that our architecture rule is correctly detecting violations,
+    // we would expect valid to be false and violations to be non-empty
+    if valid {
+        t.Error("Expected interface parameter violations, but none were found!")
+    } else {
+        t.Logf("Successfully detected methods using concrete types instead of interfaces:")
+        for _, violation := range violations {
+            t.Logf("  ✓ %s", violation)
+        }
+    }
+    
+    // You can also use the inverse rule to confirm that concrete types are being used
+    structRule, _ := arch.MethodsShouldUseStructParameters(".*Service.*", "Update.*", ".*Logger")
+    structValid, _ := arch.ValidateMethodParameters([]*arctest.ParameterRule{structRule})
+    
+    // This should pass as we expect to find methods using concrete structs
+    if !structValid {
+        t.Error("Methods are not using struct parameters as expected in our test case")
+    }
+}
+```
+
 ### Defining and Checking a Layered Architecture
 
 ```go
@@ -123,6 +163,37 @@ if err != nil {
     t.Fatalf("Failed to check layered architecture: %v", err)
 }
 
+for _, violation := range violations {
+    t.Errorf("Architecture violation: %s", violation)
+}
+```
+
+### Working with Nested Packages
+
+The library automatically handles nested packages within layers. When you define a layer with a pattern like `^domain$`, it automatically includes subpackages like `domain/entities`, `domain/services`, etc.
+
+```go
+// Initialize architecture
+arch, _ := arctest.New("./")
+
+// This will recursively parse the packages and their subpackages
+arch.ParsePackages("app", "domain")
+
+// Define layers - these patterns will match the packages and their subpackages
+appLayer, _ := arctest.NewLayer("App", "^app$") // Matches app, app/handlers, app/services, etc.
+domainLayer, _ := arctest.NewLayer("Domain", "^domain$") // Matches domain and all subpackages
+
+// Create a layered architecture
+layeredArch := arctest.NewLayeredArchitecture(appLayer, domainLayer)
+layeredArch.SetArchitecture(arch)
+
+// Define allowed dependencies
+appLayer.DependsOnLayer(domainLayer, layeredArch)
+
+// Run the check - this will check all packages and subpackages
+violations, _ := layeredArch.Check(arch)
+
+// The result will include violations from all subpackages
 for _, violation := range violations {
     t.Errorf("Architecture violation: %s", violation)
 }
