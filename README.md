@@ -146,7 +146,7 @@ infrastructureLayer, _ := arctest.NewLayer("Infrastructure", "^infrastructure/.*
 presentationLayer, _ := arctest.NewLayer("Presentation", "^presentation/.*$")
 
 // Define layered architecture
-layeredArch := arctest.NewLayeredArchitecture(
+layeredArch := arch.NewLayeredArchitecture(
     domainLayer,
     applicationLayer,
     infrastructureLayer,
@@ -154,15 +154,13 @@ layeredArch := arctest.NewLayeredArchitecture(
 )
 
 // Define dependency rules
-layeredArch.AddRule("Application", "Domain")
-layeredArch.AddRule("Infrastructure", "Domain")
-layeredArch.AddRule("Infrastructure", "Application")
-layeredArch.AddRule("Presentation", "Domain")
-layeredArch.AddRule("Presentation", "Application")
-layeredArch.AddRule("Presentation", "Infrastructure")
+applicationLayer.DependsOnLayer(domainLayer)
+infrastructureLayer.DependsOnLayer(domainLayer)
+presentationLayer.DependsOnLayer(domainLayer)
+presentationLayer.DependsOnLayer(applicationLayer)
 
 // Check layered architecture
-violations, err := layeredArch.Check(arch)
+violations, err := layeredArch.Check()
 if err != nil {
     t.Fatalf("Failed to check layered architecture: %v", err)
 }
@@ -188,14 +186,13 @@ appLayer, _ := arctest.NewLayer("App", "^app$") // Matches app, app/handlers, ap
 domainLayer, _ := arctest.NewLayer("Domain", "^domain$") // Matches domain and all subpackages
 
 // Create a layered architecture
-layeredArch := arctest.NewLayeredArchitecture(appLayer, domainLayer)
-layeredArch.SetArchitecture(arch)
+layeredArch := arch.NewLayeredArchitecture(appLayer, domainLayer)
 
 // Define allowed dependencies
 appLayer.DependsOnLayer(domainLayer, layeredArch)
 
 // Run the check - this will check all packages and subpackages
-violations, _ := layeredArch.Check(arch)
+violations, _ := layeredArch.Check()
 
 // The result will include violations from all subpackages
 for _, violation := range violations {
@@ -208,9 +205,6 @@ for _, violation := range violations {
 You can define architectural rules specific to individual layers, which is often more intuitive and clearer than defining rules at the architecture level.
 
 ```go
-// Set architecture for the layered architecture
-layeredArch.SetArchitecture(arch)
-
 // Define layer dependencies using layer-specific methods
 applicationLayer.DependsOn("Domain", layeredArch)
 infrastructureLayer.DependsOn("Domain", layeredArch)
@@ -245,8 +239,7 @@ applicationLayer, _ := arctest.NewLayer("Application", "^application$")
 utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
 
 // Set architecture for the layers
-layeredArch := arctest.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
-layeredArch.SetArchitecture(arch)
+layeredArch := arch.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
 
 // Method 1: Define direct layer dependencies
 // Domain should not depend on Application layer
@@ -275,7 +268,7 @@ if err != nil {
 }
 
 // Check layered architecture for violations
-violations, err := layeredArch.Check(arch)
+violations, err := layeredArch.Check()
 ```
 
 ### Testing for Dependency Violations
@@ -293,8 +286,7 @@ func TestDependencyViolation(t *testing.T) {
     utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
     
     // Create a rule that domain should not depend on utils
-    layeredArch := arctest.NewLayeredArchitecture(domainLayer, utilsLayer)
-    layeredArch.SetArchitecture(arch)
+    layeredArch := arch.NewLayeredArchitecture(domainLayer, utilsLayer)
     
     // Create the rule using the layer-specific method
     rule, _ := domainLayer.DoesNotDependOn("^utils$")
