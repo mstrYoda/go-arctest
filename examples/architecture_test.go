@@ -41,7 +41,7 @@ func TestExampleProjectArchitecture(t *testing.T) {
 	}
 
 	// Define layered architecture
-	layeredArch := arctest.NewLayeredArchitecture(
+	layeredArch := arch.NewLayeredArchitecture(
 		domainLayer,
 		applicationLayer,
 		infrastructureLayer,
@@ -53,13 +53,13 @@ func TestExampleProjectArchitecture(t *testing.T) {
 	// Application layer may only depend on domain layer
 	// Infrastructure layer may depend on domain layer
 	// Presentation layer may depend on domain and application layers
-	layeredArch.AddRule("Application", "Domain")
-	layeredArch.AddRule("Infrastructure", "Domain")
-	layeredArch.AddRule("Presentation", "Domain")
-	layeredArch.AddRule("Presentation", "Application")
+	applicationLayer.DependsOnLayer(domainLayer)
+	infrastructureLayer.DependsOnLayer(domainLayer)
+	presentationLayer.DependsOnLayer(domainLayer)
+	presentationLayer.DependsOnLayer(applicationLayer)
 
 	// Check layered architecture
-	violations, err := layeredArch.Check(arch)
+	violations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}

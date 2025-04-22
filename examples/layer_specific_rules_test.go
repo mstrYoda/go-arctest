@@ -42,35 +42,32 @@ func TestLayerSpecificRules(t *testing.T) {
 	}
 
 	// Define layered architecture
-	layeredArch := arctest.NewLayeredArchitecture(
+	layeredArch := arch.NewLayeredArchitecture(
 		domainLayer,
 		applicationLayer,
 		infrastructureLayer,
 		presentationLayer,
 	)
 
-	// Set architecture for the layered architecture
-	layeredArch.SetArchitecture(arch)
-
 	// Define layer dependencies using layer-specific methods
-	if err := applicationLayer.DependsOn("Domain", layeredArch); err != nil {
+	if err := applicationLayer.DependsOn("Domain"); err != nil {
 		t.Fatalf("Failed to define layer dependency: %v", err)
 	}
 
-	if err := infrastructureLayer.DependsOn("Domain", layeredArch); err != nil {
+	if err := infrastructureLayer.DependsOn("Domain"); err != nil {
 		t.Fatalf("Failed to define layer dependency: %v", err)
 	}
 
-	if err := presentationLayer.DependsOn("Domain", layeredArch); err != nil {
+	if err := presentationLayer.DependsOn("Domain"); err != nil {
 		t.Fatalf("Failed to define layer dependency: %v", err)
 	}
 
-	if err := presentationLayer.DependsOn("Application", layeredArch); err != nil {
+	if err := presentationLayer.DependsOn("Application"); err != nil {
 		t.Fatalf("Failed to define layer dependency: %v", err)
 	}
 
 	// Check layered architecture
-	violations, err := layeredArch.Check(arch)
+	violations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}

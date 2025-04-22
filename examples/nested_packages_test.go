@@ -46,8 +46,7 @@ func TestNestedPackages(t *testing.T) {
 	}
 
 	// Set up a layered architecture and set the architecture reference
-	layeredArch := arctest.NewLayeredArchitecture(domainLayer, applicationLayer)
-	layeredArch.SetArchitecture(arch)
+	layeredArch := arch.NewLayeredArchitecture(domainLayer, applicationLayer)
 
 	// Test layer dependency rule
 	// Domain should not depend on Application layer (or any of its subpackages)
@@ -68,13 +67,13 @@ func TestNestedPackages(t *testing.T) {
 	}
 
 	// Only allow application to depend on domain
-	err = applicationLayer.DependsOnLayer(domainLayer, layeredArch)
+	err = applicationLayer.DependsOnLayer(domainLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
 	// Check the layered architecture - this should detect any violations including from/to subpackages
-	layerViolations, err := layeredArch.Check(arch)
+	layerViolations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}
@@ -134,8 +133,7 @@ func TestNestedPackagesDependencyViolation(t *testing.T) {
 	}
 
 	// Set up a layered architecture and set the architecture reference
-	layeredArch := arctest.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
-	layeredArch.SetArchitecture(arch)
+	layeredArch := arch.NewLayeredArchitecture(domainLayer, applicationLayer, utilsLayer)
 
 	// Test layer dependency rule
 	// Domain should not depend on Application layer (or any of its subpackages)
@@ -173,13 +171,13 @@ func TestNestedPackagesDependencyViolation(t *testing.T) {
 	}
 
 	// Only allow application to depend on domain
-	err = applicationLayer.DependsOnLayer(domainLayer, layeredArch)
+	err = applicationLayer.DependsOnLayer(domainLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
 	// Check the layered architecture - this should detect any violations including from/to subpackages
-	layerViolations, err := layeredArch.Check(arch)
+	layerViolations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}

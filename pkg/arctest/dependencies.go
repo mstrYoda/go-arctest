@@ -70,10 +70,11 @@ func (a *Architecture) CheckDependencies(rules []*DependencyRule) ([]string, err
 
 // Layer represents a layer in a layered architecture
 type Layer struct {
-	Name     string
-	Packages []string // Package paths or patterns
-	patterns []*regexp.Regexp
-	arch     *Architecture // Reference to the architecture
+	Name        string
+	Packages    []string // Package paths or patterns
+	patterns    []*regexp.Regexp
+	arch        *Architecture        // Reference to the architecture
+	layeredArch *LayeredArchitecture // Reference to the layered architecture
 }
 
 // NewLayer creates a new layer with the given name and package patterns
@@ -133,16 +134,16 @@ func (l *Layer) SetArchitecture(arch *Architecture) {
 }
 
 // DependsOn creates a rule that this layer may depend on another layer
-func (l *Layer) DependsOn(targetLayerName string, layeredArch *LayeredArchitecture) error {
-	return layeredArch.AddRule(l.Name, targetLayerName)
+func (l *Layer) DependsOn(targetLayerName string) error {
+	return l.layeredArch.AddRule(l.Name, targetLayerName)
 }
 
 // DependsOnLayer creates a rule that this layer may depend on another layer directly
-func (l *Layer) DependsOnLayer(targetLayer *Layer, layeredArch *LayeredArchitecture) error {
+func (l *Layer) DependsOnLayer(targetLayer *Layer) error {
 	if targetLayer == nil {
 		return fmt.Errorf("target layer cannot be nil")
 	}
-	return layeredArch.AddRule(l.Name, targetLayer.Name)
+	return l.layeredArch.AddRule(l.Name, targetLayer.Name)
 }
 
 // DoesNotDependOn creates a rule that this layer should not depend on a specific package pattern
@@ -282,19 +283,17 @@ type LayeredArchitecture struct {
 }
 
 // NewLayeredArchitecture creates a new layered architecture
-func NewLayeredArchitecture(layers ...*Layer) *LayeredArchitecture {
-	return &LayeredArchitecture{
+func (a *Architecture) NewLayeredArchitecture(layers ...*Layer) *LayeredArchitecture {
+	layeredArch := &LayeredArchitecture{
 		Layers: layers,
 		rules:  make([]*DependencyRule, 0),
+		arch:   a,
 	}
-}
-
-// SetArchitecture sets the architecture reference for this layered architecture and all its layers
-func (la *LayeredArchitecture) SetArchitecture(arch *Architecture) {
-	la.arch = arch
-	for _, layer := range la.Layers {
-		layer.SetArchitecture(arch)
+	for _, layer := range layers {
+		layer.layeredArch = layeredArch
+		layer.SetArchitecture(a)
 	}
+	return layeredArch
 }
 
 // WhereLayer returns a layer by name
@@ -349,14 +348,11 @@ func (la *LayeredArchitecture) AddDependencyConstraint(rule *DependencyRule) {
 }
 
 // Check checks the architecture against the defined layers and rules
-func (la *LayeredArchitecture) Check(arch *Architecture) ([]string, error) {
-	// Set the architecture reference
-	la.SetArchitecture(arch)
-
+func (la *LayeredArchitecture) Check() ([]string, error) {
 	violations := []string{}
 
 	// For each package, check which layer it belongs to
-	for pkgPath, pkg := range arch.Packages {
+	for pkgPath, pkg := range la.arch.Packages {
 		var sourceLayer *Layer
 		for _, layer := range la.Layers {
 			if layer.Contains(pkgPath) {

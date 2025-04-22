@@ -47,16 +47,13 @@ func TestLayerDependencyRules(t *testing.T) {
 	}
 
 	// Define layered architecture
-	layeredArch := arctest.NewLayeredArchitecture(
+	layeredArch := arch.NewLayeredArchitecture(
 		domainLayer,
 		applicationLayer,
 		infrastructureLayer,
 		presentationLayer,
 		utilsLayer,
 	)
-
-	// Set architecture for the layered architecture
-	layeredArch.SetArchitecture(arch)
 
 	// Method 1: Define direct layer dependencies using the new API
 	// This is more intuitive and easier to read than using regex patterns
@@ -91,32 +88,32 @@ func TestLayerDependencyRules(t *testing.T) {
 
 	// Method 2: Using the dependency layer in a LayeredArchitecture
 	// Set up allowed dependencies with the new API
-	err = applicationLayer.DependsOnLayer(domainLayer, layeredArch)
+	err = applicationLayer.DependsOnLayer(domainLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
-	err = applicationLayer.DependsOnLayer(utilsLayer, layeredArch)
+	err = applicationLayer.DependsOnLayer(utilsLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
-	err = infrastructureLayer.DependsOnLayer(domainLayer, layeredArch)
+	err = infrastructureLayer.DependsOnLayer(domainLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
-	err = infrastructureLayer.DependsOnLayer(utilsLayer, layeredArch)
+	err = infrastructureLayer.DependsOnLayer(utilsLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
-	err = presentationLayer.DependsOnLayer(domainLayer, layeredArch)
+	err = presentationLayer.DependsOnLayer(domainLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
 
-	err = presentationLayer.DependsOnLayer(applicationLayer, layeredArch)
+	err = presentationLayer.DependsOnLayer(applicationLayer)
 	if err != nil {
 		t.Fatalf("Failed to create layer dependency: %v", err)
 	}
@@ -124,7 +121,7 @@ func TestLayerDependencyRules(t *testing.T) {
 	// Unlike the string-based API, we don't need to add a utils dependency
 
 	// Check layered architecture
-	layerViolations, err := layeredArch.Check(arch)
+	layerViolations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}

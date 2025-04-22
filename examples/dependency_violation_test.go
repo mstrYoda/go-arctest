@@ -32,13 +32,10 @@ func TestDependencyViolation(t *testing.T) {
 	}
 
 	// Define layered architecture
-	layeredArch := arctest.NewLayeredArchitecture(
+	layeredArch := arch.NewLayeredArchitecture(
 		domainLayer,
 		utilsLayer,
 	)
-
-	// Set architecture for the layered architecture
-	layeredArch.SetArchitecture(arch)
 
 	// Create a rule that domain should not depend on utils
 	// We need to match the full import path, not just the "utils" part
@@ -60,6 +57,11 @@ func TestDependencyViolation(t *testing.T) {
 		for _, violation := range violations {
 			t.Logf("  ✓ %s", violation)
 		}
+	}
+
+	violations, err = layeredArch.Check()
+	if err != nil {
+		t.Fatalf("Failed to check layered architecture: %v", err)
 	}
 }
 
@@ -104,7 +106,7 @@ func TestDependencyViolationWithLayers(t *testing.T) {
 	}
 
 	// Define layered architecture
-	layeredArch := arctest.NewLayeredArchitecture(
+	layeredArch := arch.NewLayeredArchitecture(
 		domainLayer,
 		applicationLayer,
 		infrastructureLayer,
@@ -112,22 +114,19 @@ func TestDependencyViolationWithLayers(t *testing.T) {
 		utilsLayer,
 	)
 
-	// Set architecture for the layered architecture
-	layeredArch.SetArchitecture(arch)
-
 	// Define allowed dependencies
-	applicationLayer.DependsOn("Domain", layeredArch)
-	applicationLayer.DependsOn("Utils", layeredArch)
-	infrastructureLayer.DependsOn("Domain", layeredArch)
-	infrastructureLayer.DependsOn("Utils", layeredArch)
-	presentationLayer.DependsOn("Domain", layeredArch)
-	presentationLayer.DependsOn("Application", layeredArch)
-	presentationLayer.DependsOn("Utils", layeredArch)
+	applicationLayer.DependsOn("Domain")
+	applicationLayer.DependsOn("Utils")
+	infrastructureLayer.DependsOn("Domain")
+	infrastructureLayer.DependsOn("Utils")
+	presentationLayer.DependsOn("Domain")
+	presentationLayer.DependsOn("Application")
+	presentationLayer.DependsOn("Utils")
 
 	// Intentionally NOT allowing Domain to depend on Utils
 
 	// Check layered architecture
-	violations, err := layeredArch.Check(arch)
+	violations, err := layeredArch.Check()
 	if err != nil {
 		t.Fatalf("Failed to check layered architecture: %v", err)
 	}
