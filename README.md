@@ -2,6 +2,10 @@
 
 Go ArcTest is a library for testing the architecture of your Go projects, similar to Java's ArchUnit. It provides tooling to validate architectural rules and constraints in your codebase through tests.
 
+<p>
+    <img src="assets/image.png" alt="Description" width="300">
+</p>
+
 ## Features
 
 - **Package Dependency Analysis**: Check if a layer/package imports/depends on another package. Define rules for allowed and disallowed dependencies.
