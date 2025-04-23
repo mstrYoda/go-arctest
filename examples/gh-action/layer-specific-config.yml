@@ -1,0 +1,58 @@
+# Configuration example with layer-specific rules
+layers:
+  - name: Domain
+    pattern: "^domain/.*$"
+  - name: Application
+    pattern: "^application/.*$"
+  - name: Infrastructure
+    pattern: "^infrastructure/.*$"
+  - name: Presentation
+    pattern: "^presentation/.*$"
+
+# Basic layer dependency rules
+rules:
+  - from: Application
+    to: Domain
+  - from: Infrastructure
+    to: Domain
+  - from: Infrastructure
+    to: Application
+  - from: Presentation
+    to: Domain
+  - from: Presentation
+    to: Application
+  - from: Presentation
+    to: Infrastructure
+
+# Layer-specific rules
+layerSpecificRules:
+  # Domain layer should not depend on any other layer
+  - layer: "Domain"
+    ruleType: "dependency"
+    parameters:
+      targetPattern: "^(application|infrastructure|presentation)/.*$"
+
+  # Infrastructure repositories should implement domain interfaces
+  - layer: "Infrastructure"
+    ruleType: "interface"
+    parameters:
+      structPattern: ".*Repository$"
+      interfacePattern: ".*RepositoryInterface$"
+
+  # Application services should use interfaces as parameters
+  - layer: "Application"
+    ruleType: "parameter"
+    parameters:
+      structPattern: ".*Service$"
+      methodPattern: "New.*"
+      parameterTypePattern: ".*Repository$"
+      shouldUseInterface: "true"
+
+  # Presentation handlers should use application services
+  - layer: "Presentation"
+    ruleType: "parameter"
+    parameters:
+      structPattern: ".*Handler$"
+      methodPattern: "New.*"
+      parameterTypePattern: ".*Service$"
+      shouldUseInterface: "true"

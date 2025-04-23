@@ -1,0 +1,106 @@
+# Hexagonal Architecture Configuration Example
+layers:
+  - name: Domain
+    pattern: "^internal/domain/.*$"
+  - name: Application
+    pattern: "^internal/application/.*$"
+  - name: Adapters
+    pattern: "^internal/adapters/.*$"
+  - name: Ports
+    pattern: "^internal/ports/.*$"
+  - name: Config
+    pattern: "^internal/config/.*$"
+  - name: API
+    pattern: "^api/.*$"
+  - name: CMD
+    pattern: "^cmd/.*$"
+
+# Layer dependency rules
+rules:
+  # Application can depend on Domain and Ports
+  - from: Application
+    to: Domain
+  - from: Application
+    to: Ports
+  
+  # Adapters can depend on Ports and Domain
+  - from: Adapters
+    to: Ports
+  - from: Adapters
+    to: Domain
+  
+  # API can depend on Application, Ports, and Adapters
+  - from: API
+    to: Application
+  - from: API
+    to: Ports
+  - from: API
+    to: Adapters
+  
+  # CMD can depend on everything except Domain directly
+  - from: CMD
+    to: Application
+  - from: CMD
+    to: Adapters
+  - from: CMD
+    to: Ports
+  - from: CMD
+    to: Config
+  - from: CMD
+    to: API
+
+# Interface implementation rules
+interfaceRules:
+  # Adapters must implement port interfaces
+  - structPattern: ".*Repository$"
+    interfacePattern: ".*RepositoryPort$"
+  - structPattern: ".*Service$"
+    interfacePattern: ".*ServicePort$"
+  - structPattern: ".*Client$"
+    interfacePattern: ".*ClientPort$"
+
+# Parameter type rules
+parameterRules:
+  # Application services should use port interfaces
+  - structPattern: ".*Service$"
+    methodPattern: ".*"
+    parameterTypePattern: ".*Repository.*"
+    shouldUseInterface: true
+  
+  # API handlers should use application services
+  - structPattern: ".*Handler$"
+    methodPattern: ".*"
+    parameterTypePattern: ".*Service.*"
+    shouldUseInterface: true
+
+# Direct layer dependency rules
+directLayerDependencyRules:
+  # Domain should not depend on any other layer
+  - sourceLayer: "Domain"
+    targetLayer: "Application"
+    allowed: false
+  - sourceLayer: "Domain"
+    targetLayer: "Adapters"
+    allowed: false
+  - sourceLayer: "Domain"
+    targetLayer: "API"
+    allowed: false
+  - sourceLayer: "Domain"
+    targetLayer: "CMD"
+    allowed: false
+  - sourceLayer: "Domain"
+    targetLayer: "Config"
+    allowed: false
+  
+  # Ports should not depend on Adapters or Application
+  - sourceLayer: "Ports"
+    targetLayer: "Adapters"
+    allowed: false
+  - sourceLayer: "Ports"
+    targetLayer: "Application"
+    allowed: false
+  
+  # CMD should not depend on Domain directly
+  - sourceLayer: "CMD"
+    targetLayer: "Domain"
+    allowed: false

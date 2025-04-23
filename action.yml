@@ -1,0 +1,29 @@
+name: 'Go Architecture Test'
+description: 'Run architecture tests for Go projects'
+author: 'mstrYoda'
+inputs:
+  config:
+    description: 'Path to the configuration file'
+    required: true
+    default: '.github/arctest-config.yml'
+  project:
+    description: 'Path to the project root'
+    required: false
+    default: '.'
+  verbose:
+    description: 'Enable verbose output'
+    required: false
+    default: 'false'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '-config'
+    - ${{ inputs.config }}
+    - '-project'
+    - ${{ inputs.project }}
+    - '-verbose'
+    - ${{ inputs.verbose }}
+branding:
+  icon: 'check-circle'
+  color: 'green'
