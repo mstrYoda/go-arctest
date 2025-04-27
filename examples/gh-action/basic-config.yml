@@ -1,0 +1,24 @@
+# Basic configuration example
+layers:
+  - name: Domain
+    pattern: "^domain/.*$"
+  - name: Application
+    pattern: "^application/.*$"
+  - name: Infrastructure
+    pattern: "^infrastructure/.*$"
+  - name: Presentation
+    pattern: "^presentation/.*$"
+
+rules:
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure

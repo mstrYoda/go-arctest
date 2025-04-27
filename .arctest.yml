@@ -1,0 +1,10 @@
+# .arctest.yml
+layers:
+  - name: Examples
+    pattern: "^examples/.*$"
+  - name: Pkg
+    pattern: "^pkg/.*$"
+
+rules:
+  - layer: Examples
+    dependsOn: Pkg

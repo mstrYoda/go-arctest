@@ -15,6 +15,9 @@ Go ArcTest is a library for testing the architecture of your Go projects, simila
 - **Layer-Specific Rules**: Define architectural rules specific to individual layers.
 - **Direct Layer Dependency Rules**: Specify that one layer should not depend on another layer using a more intuitive API.
 - **Nested Package Support**: Automatically analyzes nested packages within layers and applies architecture rules to them.
+- **YAML Configuration**: Define your architecture rules in a YAML file.
+- **CLI Tool**: Run architecture tests from the command line.
+- **GitHub Action**: Run architecture tests as part of your CI/CD pipeline.
 
 ## Installation
 
@@ -106,14 +109,14 @@ func TestInterfaceParameterViolation(t *testing.T) {
     // Initialize architecture and parse packages
     arch, _ := arctest.New("./example_project")
     arch.ParsePackages("domain", "utils")
-    
+
     // Define the rule: methods named "Update*" should use interface parameters for "Logger"
     // This will check if methods are violating the rule by using concrete structs
     rule, _ := arch.MethodsShouldUseInterfaceParameters(".*Service.*", "Update.*", ".*Logger")
-    
+
     // Validate parameter types - we expect violations
     valid, violations := arch.ValidateMethodParameters([]*arctest.ParameterRule{rule})
-    
+
     // If we're testing that our architecture rule is correctly detecting violations,
     // we would expect valid to be false and violations to be non-empty
     if valid {
@@ -124,11 +127,11 @@ func TestInterfaceParameterViolation(t *testing.T) {
             t.Logf("  ✓ %s", violation)
         }
     }
-    
+
     // You can also use the inverse rule to confirm that concrete types are being used
     structRule, _ := arch.MethodsShouldUseStructParameters(".*Service.*", "Update.*", ".*Logger")
     structValid, _ := arch.ValidateMethodParameters([]*arctest.ParameterRule{structRule})
-    
+
     // This should pass as we expect to find methods using concrete structs
     if !structValid {
         t.Error("Methods are not using struct parameters as expected in our test case")
@@ -280,20 +283,20 @@ func TestDependencyViolation(t *testing.T) {
     // Initialize architecture and parse packages
     arch, _ := arctest.New("./example_project")
     arch.ParsePackages("domain", "utils") // domain should not depend on utils
-    
+
     // Define layers
     domainLayer, _ := arctest.NewLayer("Domain", "^domain$")
     utilsLayer, _ := arctest.NewLayer("Utils", "^utils$")
-    
+
     // Create a rule that domain should not depend on utils
     layeredArch := arch.NewLayeredArchitecture(domainLayer, utilsLayer)
-    
+
     // Create the rule using the layer-specific method
     rule, _ := domainLayer.DoesNotDependOn("^utils$")
-    
+
     // Validate dependencies - we expect violations if domain imports utils
     valid, violations := arch.ValidateDependenciesWithRules([]*arctest.DependencyRule{rule})
-    
+
     // For a test that expects violations (like testing that our rules work)
     // we'd check that valid is false and violations contains expected issues
     if valid {
@@ -307,10 +310,93 @@ func TestDependencyViolation(t *testing.T) {
 }
 ```
 
+## CLI Tool
+
+Go ArcTest includes a CLI tool that can be used to run architecture tests from the command line.
+
+### Installation
+
+```bash
+go install github.com/mstrYoda/go-arctest/cmd/arctest@latest
+```
+
+### Usage
+
+```bash
+arctest -config=.arctest.yml -project=. -verbose=true
+```
+
+Options:
+- `-config`: Path to the configuration file (default: `.arctest.yml`)
+- `-project`: Path to the project root (default: `.`)
+- `-verbose`: Enable verbose output (default: `false`)
+
+### Configuration
+
+The configuration file is a YAML file that defines the layers and rules for your architecture. Here's an example:
+
+```yaml
+# .arctest.yml
+layers:
+  - name: Domain
+    pattern: "^domain/.*$"
+  - name: Application
+    pattern: "^application/.*$"
+  - name: Infrastructure
+    pattern: "^infrastructure/.*$"
+  - name: Presentation
+    pattern: "^presentation/.*$"
+
+rules:
+  - from: Application
+    to: Domain
+  - from: Infrastructure
+    to: Domain
+  - from: Infrastructure
+    to: Application
+  - from: Presentation
+    to: Domain
+  - from: Presentation
+    to: Application
+  - from: Presentation
+    to: Infrastructure
+```
+
+## GitHub Action
+
+Go ArcTest can be used as a GitHub Action to run architecture tests as part of your CI/CD pipeline.
+
+### Usage
+
+Create a workflow file in your repository at `.github/workflows/go-arctest.yml`:
+
+```yaml
+name: Architecture Test
+
+on: [push, pull_request]
+
+jobs:
+  check-architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run go-arctest
+        uses: mstrYoda/go-arctest@v1
+        with:
+          config: '.github/arctest-config.yml'
+```
+
+### Inputs
+
+- `config`: Path to the configuration file (default: `.github/arctest-config.yml`)
+- `project`: Path to the project root (default: `.`)
+- `verbose`: Enable verbose output (default: `false`)
+
 ## Example
 
 See the `examples` directory for a complete example of how to use this library in your architecture tests.
 
 ## License
 
-MIT 
+MIT

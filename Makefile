@@ -1,10 +1,11 @@
-.PHONY: all build test clean example
+.PHONY: all build build-cli test clean example
 
-all: build test
+all: build build-cli test
 
 build:
 	@echo "Building go-arctest..."
-	@go build -o bin/arctest ./main.go
+	@mkdir -p bin
+	@go build -o bin/arctest ./cmd/arctest
 
 test:
 	@echo "Running tests..."
@@ -16,4 +17,4 @@ clean:
 
 example:
 	@echo "Running example architecture tests..."
-	@go test ./examples/... 
+	@go test ./examples/...

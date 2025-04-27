@@ -1,0 +1,55 @@
+# Advanced configuration example with interface and parameter rules
+layers:
+  - name: Domain
+    pattern: "^domain/.*$"
+  - name: Application
+    pattern: "^application/.*$"
+  - name: Infrastructure
+    pattern: "^infrastructure/.*$"
+  - name: Presentation
+    pattern: "^presentation/.*$"
+
+# Basic layer dependency rules
+rules:
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure
+
+# Interface implementation rules
+interfaceRules:
+  - structPattern: ".*Repository$"
+    interfacePattern: ".*RepositoryInterface$"
+  - structPattern: ".*Service$"
+    interfacePattern: ".*ServiceInterface$"
+
+# Parameter type rules
+parameterRules:
+  - structPattern: ".*Service$"
+    methodPattern: "New.*"
+    parameterTypePattern: ".*Repository$"
+    useInterface: true
+  - structPattern: ".*Handler$"
+    methodPattern: "New.*"
+    parameterTypePattern: ".*Service$"
+    useInterface: true
+
+# Direct layer dependency rules
+directLayerDependencyRules:
+  - layer: "Domain"
+    dependsOn: "Application"
+    isAllowed: false
+  - layer: "Domain"
+    dependsOn: "Infrastructure"
+    isAllowed: false
+  - layer: "Domain"
+    dependsOn: "Presentation"
+    isAllowed: false
