@@ -18,55 +18,55 @@ layers:
 # Layer dependency rules (following the Dependency Rule of Clean Architecture)
 rules:
   # UseCases can depend on Entities
-  - from: UseCases
-    to: Entities
-  
+  - layer: UseCases
+    dependsOn: Entities
+
   # InterfaceAdapters can depend on UseCases and Entities
-  - from: InterfaceAdapters
-    to: UseCases
-  - from: InterfaceAdapters
-    to: Entities
-  
+  - layer: InterfaceAdapters
+    dependsOn: UseCases
+  - layer: InterfaceAdapters
+    dependsOn: Entities
+
   # Frameworks can depend on InterfaceAdapters, UseCases, and Entities
-  - from: Frameworks
-    to: InterfaceAdapters
-  - from: Frameworks
-    to: UseCases
-  - from: Frameworks
-    to: Entities
-  
+  - layer: Frameworks
+    dependsOn: InterfaceAdapters
+  - layer: Frameworks
+    dependsOn: UseCases
+  - layer: Frameworks
+    dependsOn: Entities
+
   # Delivery can depend on InterfaceAdapters, UseCases, and Entities
-  - from: Delivery
-    to: InterfaceAdapters
-  - from: Delivery
-    to: UseCases
-  - from: Delivery
-    to: Entities
-  
+  - layer: Delivery
+    dependsOn: InterfaceAdapters
+  - layer: Delivery
+    dependsOn: UseCases
+  - layer: Delivery
+    dependsOn: Entities
+
   # CMD can depend on everything
-  - from: CMD
-    to: Delivery
-  - from: CMD
-    to: Frameworks
-  - from: CMD
-    to: InterfaceAdapters
-  - from: CMD
-    to: UseCases
-  - from: CMD
-    to: Entities
-  - from: CMD
-    to: Config
+  - layer: CMD
+    dependsOn: Delivery
+  - layer: CMD
+    dependsOn: Frameworks
+  - layer: CMD
+    dependsOn: InterfaceAdapters
+  - layer: CMD
+    dependsOn: UseCases
+  - layer: CMD
+    dependsOn: Entities
+  - layer: CMD
+    dependsOn: Config
 
 # Interface implementation rules
 interfaceRules:
   # Repositories must implement repository interfaces
   - structPattern: ".*Repository$"
     interfacePattern: ".*RepositoryInterface$"
-  
+
   # Services must implement service interfaces
   - structPattern: ".*Service$"
     interfacePattern: ".*ServiceInterface$"
-  
+
   # Controllers must implement controller interfaces
   - structPattern: ".*Controller$"
     interfacePattern: ".*ControllerInterface$"
@@ -77,34 +77,34 @@ parameterRules:
   - structPattern: ".*UseCase$"
     methodPattern: ".*"
     parameterTypePattern: ".*Repository.*"
-    shouldUseInterface: true
-  
+    useInterface: true
+
   # Controllers should use use case interfaces
   - structPattern: ".*Controller$"
     methodPattern: ".*"
     parameterTypePattern: ".*UseCase.*"
-    shouldUseInterface: true
+    useInterface: true
 
 # Layer-specific rules
 layerSpecificRules:
   # Entities should not depend on any other layer
   - layer: "Entities"
-    ruleType: "dependency"
+    type: "dependency"
     parameters:
       targetPattern: "^internal/(domain/usecases|adapters|frameworks|delivery)/.*$"
-  
+
   # Use cases should use repository interfaces
   - layer: "UseCases"
-    ruleType: "parameter"
+    type: "parameter"
     parameters:
       structPattern: ".*UseCase$"
       methodPattern: "New.*"
       parameterTypePattern: ".*Repository.*"
       shouldUseInterface: "true"
-  
+
   # Interface adapters should implement repository interfaces
   - layer: "InterfaceAdapters"
-    ruleType: "interface"
+    type: "interface"
     parameters:
       structPattern: ".*Repository$"
       interfacePattern: ".*RepositoryInterface$"

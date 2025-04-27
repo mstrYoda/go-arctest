@@ -11,37 +11,37 @@ layers:
 
 # Basic layer dependency rules
 rules:
-  - from: Application
-    to: Domain
-  - from: Infrastructure
-    to: Domain
-  - from: Infrastructure
-    to: Application
-  - from: Presentation
-    to: Domain
-  - from: Presentation
-    to: Application
-  - from: Presentation
-    to: Infrastructure
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure
 
 # Layer-specific rules
 layerSpecificRules:
   # Domain layer should not depend on any other layer
   - layer: "Domain"
-    ruleType: "dependency"
+    type: "dependency"
     parameters:
       targetPattern: "^(application|infrastructure|presentation)/.*$"
 
   # Infrastructure repositories should implement domain interfaces
   - layer: "Infrastructure"
-    ruleType: "interface"
+    type: "interface"
     parameters:
       structPattern: ".*Repository$"
       interfacePattern: ".*RepositoryInterface$"
 
   # Application services should use interfaces as parameters
   - layer: "Application"
-    ruleType: "parameter"
+    type: "parameter"
     parameters:
       structPattern: ".*Service$"
       methodPattern: "New.*"
@@ -50,7 +50,7 @@ layerSpecificRules:
 
   # Presentation handlers should use application services
   - layer: "Presentation"
-    ruleType: "parameter"
+    type: "parameter"
     parameters:
       structPattern: ".*Handler$"
       methodPattern: "New.*"

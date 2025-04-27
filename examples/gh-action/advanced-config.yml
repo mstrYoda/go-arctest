@@ -11,18 +11,18 @@ layers:
 
 # Basic layer dependency rules
 rules:
-  - from: Application
-    to: Domain
-  - from: Infrastructure
-    to: Domain
-  - from: Infrastructure
-    to: Application
-  - from: Presentation
-    to: Domain
-  - from: Presentation
-    to: Application
-  - from: Presentation
-    to: Infrastructure
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure
 
 # Interface implementation rules
 interfaceRules:
@@ -36,20 +36,20 @@ parameterRules:
   - structPattern: ".*Service$"
     methodPattern: "New.*"
     parameterTypePattern: ".*Repository$"
-    shouldUseInterface: true
+    useInterface: true
   - structPattern: ".*Handler$"
     methodPattern: "New.*"
     parameterTypePattern: ".*Service$"
-    shouldUseInterface: true
+    useInterface: true
 
 # Direct layer dependency rules
 directLayerDependencyRules:
-  - sourceLayer: "Domain"
-    targetLayer: "Application"
-    allowed: false
-  - sourceLayer: "Domain"
-    targetLayer: "Infrastructure"
-    allowed: false
-  - sourceLayer: "Domain"
-    targetLayer: "Presentation"
-    allowed: false
+  - layer: "Domain"
+    dependsOn: "Application"
+    isAllowed: false
+  - layer: "Domain"
+    dependsOn: "Infrastructure"
+    isAllowed: false
+  - layer: "Domain"
+    dependsOn: "Presentation"
+    isAllowed: false

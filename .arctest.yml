@@ -6,5 +6,5 @@ layers:
     pattern: "^pkg/.*$"
 
 rules:
-  - from: Examples
-    to: Pkg
+  - layer: Examples
+    dependsOn: Pkg

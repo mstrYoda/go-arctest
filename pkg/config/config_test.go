@@ -23,18 +23,18 @@ layers:
     pattern: "^presentation/.*$"
 
 rules:
-  - from: Application
-    to: Domain
-  - from: Infrastructure
-    to: Domain
-  - from: Infrastructure
-    to: Application
-  - from: Presentation
-    to: Domain
-  - from: Presentation
-    to: Application
-  - from: Presentation
-    to: Infrastructure
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure
 `
 
 	err := os.WriteFile(configPath, []byte(configContent), 0644)
@@ -73,8 +73,8 @@ rules:
 
 	// Check rules
 	for _, rule := range config.Rules {
-		if rule.From == "Domain" {
-			t.Errorf("Domain should not depend on any layer, but found rule: %s -> %s", rule.From, rule.To)
+		if rule.Layer == "Domain" {
+			t.Errorf("Domain should not depend on any layer, but found rule: %s -> %s", rule.Layer, rule.DependsOn)
 		}
 	}
 }
@@ -87,7 +87,7 @@ func TestValidateConfig(t *testing.T) {
 			{Name: "Layer2", Pattern: "^layer2$"},
 		},
 		Rules: []RuleConfig{
-			{From: "Layer1", To: "Layer2"},
+			{Layer: "Layer1", DependsOn: "Layer2"},
 		},
 	}
 
@@ -137,7 +137,7 @@ func TestValidateConfig(t *testing.T) {
 			{Name: "Layer1", Pattern: "^layer1$"},
 		},
 		Rules: []RuleConfig{
-			{From: "Layer1", To: "UndefinedLayer"},
+			{Layer: "Layer1", DependsOn: "UndefinedLayer"},
 		},
 	}
 
@@ -154,7 +154,7 @@ func TestSaveConfig(t *testing.T) {
 			{Name: "Layer2", Pattern: "^layer2$"},
 		},
 		Rules: []RuleConfig{
-			{From: "Layer1", To: "Layer2"},
+			{Layer: "Layer1", DependsOn: "Layer2"},
 		},
 	}
 

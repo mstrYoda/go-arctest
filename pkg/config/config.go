@@ -27,8 +27,8 @@ type LayerConfig struct {
 
 // RuleConfig represents a dependency rule between layers
 type RuleConfig struct {
-	From string `yaml:"from"`
-	To   string `yaml:"to"`
+	Layer     string `yaml:"layer"`
+	DependsOn string `yaml:"dependsOn"`
 }
 
 // InterfaceRuleConfig represents a rule for interface implementations
@@ -42,21 +42,21 @@ type ParameterRuleConfig struct {
 	StructPattern        string `yaml:"structPattern"`
 	MethodPattern        string `yaml:"methodPattern"`
 	ParameterTypePattern string `yaml:"parameterTypePattern"`
-	ShouldUseInterface   bool   `yaml:"shouldUseInterface"`
+	UseInterface         bool   `yaml:"useInterface"`
 }
 
 // LayerSpecificRuleConfig represents a rule specific to a layer
 type LayerSpecificRuleConfig struct {
 	Layer      string            `yaml:"layer"`
-	RuleType   string            `yaml:"ruleType"` // "dependency", "interface", or "parameter"
+	Type       string            `yaml:"type"` // "dependency", "interface", or "parameter"
 	Parameters map[string]string `yaml:"parameters"`
 }
 
 // DirectLayerDependencyRuleConfig represents a direct dependency rule between layers
 type DirectLayerDependencyRuleConfig struct {
-	SourceLayer string `yaml:"sourceLayer"`
-	TargetLayer string `yaml:"targetLayer"`
-	Allowed     bool   `yaml:"allowed"`
+	Layer     string `yaml:"layer"`
+	DependsOn string `yaml:"dependsOn"`
+	IsAllowed bool   `yaml:"isAllowed"`
 }
 
 // LoadConfig loads the configuration from a YAML file
@@ -107,17 +107,17 @@ func validateConfig(config *Config) error {
 
 	// Validate rules
 	for _, rule := range config.Rules {
-		if rule.From == "" {
-			return fmt.Errorf("rule 'from' cannot be empty")
+		if rule.Layer == "" {
+			return fmt.Errorf("rule 'layer' cannot be empty")
 		}
-		if rule.To == "" {
-			return fmt.Errorf("rule 'to' cannot be empty")
+		if rule.DependsOn == "" {
+			return fmt.Errorf("rule 'dependsOn' cannot be empty")
 		}
-		if !layerNames[rule.From] {
-			return fmt.Errorf("rule references undefined layer: %s", rule.From)
+		if !layerNames[rule.Layer] {
+			return fmt.Errorf("rule references undefined layer: %s", rule.Layer)
 		}
-		if !layerNames[rule.To] {
-			return fmt.Errorf("rule references undefined layer: %s", rule.To)
+		if !layerNames[rule.DependsOn] {
+			return fmt.Errorf("rule references undefined layer: %s", rule.DependsOn)
 		}
 	}
 
@@ -169,18 +169,18 @@ func validateConfig(config *Config) error {
 		if !layerNames[rule.Layer] {
 			return fmt.Errorf("layer-specific rule %d: references undefined layer: %s", i, rule.Layer)
 		}
-		if rule.RuleType == "" {
-			return fmt.Errorf("layer-specific rule %d: rule type cannot be empty", i)
+		if rule.Type == "" {
+			return fmt.Errorf("layer-specific rule %d: type cannot be empty", i)
 		}
-		if rule.RuleType != "dependency" && rule.RuleType != "interface" && rule.RuleType != "parameter" {
-			return fmt.Errorf("layer-specific rule %d: invalid rule type: %s", i, rule.RuleType)
+		if rule.Type != "dependency" && rule.Type != "interface" && rule.Type != "parameter" {
+			return fmt.Errorf("layer-specific rule %d: invalid type: %s", i, rule.Type)
 		}
 		if len(rule.Parameters) == 0 {
 			return fmt.Errorf("layer-specific rule %d: parameters cannot be empty", i)
 		}
 
 		// Validate parameters based on rule type
-		switch rule.RuleType {
+		switch rule.Type {
 		case "dependency":
 			if _, ok := rule.Parameters["targetPattern"]; !ok {
 				return fmt.Errorf("layer-specific rule %d: dependency rule requires 'targetPattern' parameter", i)
@@ -228,17 +228,17 @@ func validateConfig(config *Config) error {
 
 	// Validate direct layer dependency rules
 	for i, rule := range config.DirectLayerDependencyRules {
-		if rule.SourceLayer == "" {
-			return fmt.Errorf("direct layer dependency rule %d: source layer cannot be empty", i)
+		if rule.Layer == "" {
+			return fmt.Errorf("direct layer dependency rule %d: layer cannot be empty", i)
 		}
-		if rule.TargetLayer == "" {
-			return fmt.Errorf("direct layer dependency rule %d: target layer cannot be empty", i)
+		if rule.DependsOn == "" {
+			return fmt.Errorf("direct layer dependency rule %d: dependsOn cannot be empty", i)
 		}
-		if !layerNames[rule.SourceLayer] {
-			return fmt.Errorf("direct layer dependency rule %d: references undefined source layer: %s", i, rule.SourceLayer)
+		if !layerNames[rule.Layer] {
+			return fmt.Errorf("direct layer dependency rule %d: references undefined layer: %s", i, rule.Layer)
 		}
-		if !layerNames[rule.TargetLayer] {
-			return fmt.Errorf("direct layer dependency rule %d: references undefined target layer: %s", i, rule.TargetLayer)
+		if !layerNames[rule.DependsOn] {
+			return fmt.Errorf("direct layer dependency rule %d: references undefined dependsOn layer: %s", i, rule.DependsOn)
 		}
 	}
 
@@ -276,12 +276,12 @@ func (c *Config) BuildArchitecture(basePath string) (*arctest.Architecture, *arc
 
 	// Add dependency rules from the basic rules section
 	for _, ruleConfig := range c.Rules {
-		fromLayer := layerMap[ruleConfig.From]
-		toLayer := layerMap[ruleConfig.To]
+		layer := layerMap[ruleConfig.Layer]
+		dependsOnLayer := layerMap[ruleConfig.DependsOn]
 
-		if err := fromLayer.DependsOnLayer(toLayer); err != nil {
+		if err := layer.DependsOnLayer(dependsOnLayer); err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("failed to add dependency rule from %s to %s: %w",
-				ruleConfig.From, ruleConfig.To, err)
+				ruleConfig.Layer, ruleConfig.DependsOn, err)
 		}
 	}
 
@@ -303,7 +303,7 @@ func (c *Config) BuildArchitecture(basePath string) (*arctest.Architecture, *arc
 	for _, ruleConfig := range c.ParameterRules {
 		var rule *arctest.ParameterRule
 		var err error
-		if ruleConfig.ShouldUseInterface {
+		if ruleConfig.UseInterface {
 			rule, err = arch.MethodsShouldUseInterfaceParameters(
 				ruleConfig.StructPattern,
 				ruleConfig.MethodPattern,
@@ -329,7 +329,7 @@ func (c *Config) BuildArchitecture(basePath string) (*arctest.Architecture, *arc
 			return nil, nil, nil, nil, nil, fmt.Errorf("layer %s not found for layer-specific rule", ruleConfig.Layer)
 		}
 
-		switch ruleConfig.RuleType {
+		switch ruleConfig.Type {
 		case "dependency":
 			targetPattern := ruleConfig.Parameters["targetPattern"]
 			rule, err := layer.DoesNotDependOn(targetPattern)
@@ -374,25 +374,25 @@ func (c *Config) BuildArchitecture(basePath string) (*arctest.Architecture, *arc
 
 	// Add direct layer dependency rules
 	for _, ruleConfig := range c.DirectLayerDependencyRules {
-		sourceLayer := layerMap[ruleConfig.SourceLayer]
-		targetLayer := layerMap[ruleConfig.TargetLayer]
-		if sourceLayer == nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("source layer %s not found for direct layer dependency rule", ruleConfig.SourceLayer)
+		layer := layerMap[ruleConfig.Layer]
+		dependsOnLayer := layerMap[ruleConfig.DependsOn]
+		if layer == nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("layer %s not found for direct layer dependency rule", ruleConfig.Layer)
 		}
-		if targetLayer == nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("target layer %s not found for direct layer dependency rule", ruleConfig.TargetLayer)
+		if dependsOnLayer == nil {
+			return nil, nil, nil, nil, nil, fmt.Errorf("dependsOn layer %s not found for direct layer dependency rule", ruleConfig.DependsOn)
 		}
 
 		var rule *arctest.DependencyRule
 		var err error
-		if ruleConfig.Allowed {
+		if ruleConfig.IsAllowed {
 			// If allowed, add the dependency to the layered architecture
-			if err := sourceLayer.DependsOnLayer(targetLayer); err != nil {
+			if err := layer.DependsOnLayer(dependsOnLayer); err != nil {
 				return nil, nil, nil, nil, nil, fmt.Errorf("failed to add direct layer dependency rule: %w", err)
 			}
 		} else {
-			// If not allowed, create a rule that the source layer should not depend on the target layer
-			rule, err = sourceLayer.DoesNotDependOnLayer(targetLayer)
+			// If not allowed, create a rule that the layer should not depend on the dependsOn layer
+			rule, err = layer.DoesNotDependOnLayer(dependsOnLayer)
 			if err != nil {
 				return nil, nil, nil, nil, nil, fmt.Errorf("failed to create direct layer dependency rule: %w", err)
 			}

@@ -10,15 +10,15 @@ layers:
     pattern: "^presentation/.*$"
 
 rules:
-  - from: Application
-    to: Domain
-  - from: Infrastructure
-    to: Domain
-  - from: Infrastructure
-    to: Application
-  - from: Presentation
-    to: Domain
-  - from: Presentation
-    to: Application
-  - from: Presentation
-    to: Infrastructure
+  - layer: Application
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Domain
+  - layer: Infrastructure
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Domain
+  - layer: Presentation
+    dependsOn: Application
+  - layer: Presentation
+    dependsOn: Infrastructure

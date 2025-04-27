@@ -62,7 +62,7 @@ func main() {
 
 			fmt.Println("\nLayer Dependency Rules:")
 			for _, rule := range cfg.Rules {
-				fmt.Printf("  - %s -> %s\n", rule.From, rule.To)
+				fmt.Printf("  - %s -> %s\n", rule.Layer, rule.DependsOn)
 			}
 
 			if len(cfg.InterfaceRules) > 0 {
@@ -77,7 +77,7 @@ func main() {
 				fmt.Println("\nParameter Type Rules:")
 				for _, rule := range cfg.ParameterRules {
 					paramType := "struct"
-					if rule.ShouldUseInterface {
+					if rule.UseInterface {
 						paramType = "interface"
 					}
 					fmt.Printf("  - Methods in '%s' matching '%s' should use %s parameters for '%s'\n",
@@ -88,7 +88,7 @@ func main() {
 			if len(cfg.LayerSpecificRules) > 0 {
 				fmt.Println("\nLayer-Specific Rules:")
 				for i, rule := range cfg.LayerSpecificRules {
-					fmt.Printf("  - [%d] Layer '%s' rule type '%s'\n", i+1, rule.Layer, rule.RuleType)
+					fmt.Printf("  - [%d] Layer '%s' rule type '%s'\n", i+1, rule.Layer, rule.Type)
 					for k, v := range rule.Parameters {
 						fmt.Printf("      %s: %s\n", k, v)
 					}
@@ -99,10 +99,10 @@ func main() {
 				fmt.Println("\nDirect Layer Dependency Rules:")
 				for _, rule := range cfg.DirectLayerDependencyRules {
 					action := "must not depend on"
-					if rule.Allowed {
+					if rule.IsAllowed {
 						action = "may depend on"
 					}
-					fmt.Printf("  - Layer '%s' %s layer '%s'\n", rule.SourceLayer, action, rule.TargetLayer)
+					fmt.Printf("  - Layer '%s' %s layer '%s'\n", rule.Layer, action, rule.DependsOn)
 				}
 			}
 		}
